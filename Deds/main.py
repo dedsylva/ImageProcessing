@@ -1,25 +1,23 @@
-#import pandas as pd
+from keras.datasets import mnist
+from keras.utils import to_categorical
 import numpy as np
 from model import Model
 
-"""
-data = pd.read_csv('').to_numpy()
+#load data
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
 
-np.random.shuffle(data)
+#need that channel dimension, normalized float32 tensor
+X_train = train_images.reshape((60000, 28*28, 1)).astype('float32')/255 
+Y_train =  to_categorical(train_labels).reshape((60000, 10, 1))
+X_test = test_images.reshape((10000, 28*28)).astype('float32')/255 
+Y_test =  to_categorical(test_labels).reshape((10000, 10, 1))
 
-d_test = data[:1000].T
-X_test = d_test[1:]
-Y_test = d_test[0]
+print('helloooo', Y_train.shape)
 
-d_train = data[1000:].T
-X_train = d_train[1:]
-Y_train = d_tran[0]
-"""
-
-X_train = np.random.rand(100, 28*28, 1,).astype('float32')
-Y_train = np.zeros((100, 10, 1), dtype='float32')
-for i in range(Y_train.shape[0]):
-	Y_train[i][np.random.randint(10)] = 1./255
+#X_train = np.random.rand(100, 28*28, 1,).astype('float32')
+#Y_train = np.zeros((100, 10, 1), dtype='float32')
+#for i in range(Y_train.shape[0]):
+#	Y_train[i][np.random.randint(10)] = 1./255
 
 NN = Model()
 # model is a list where:

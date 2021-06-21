@@ -23,9 +23,8 @@ class Model():
 		return act(np.dot(W,x) + b)
 
 
-	def backward(self, a, previous_x, y, loss, output, next_model, all_loss):
+	def backward(self, a, previous_a, y, loss, output, next_model, all_loss):
 		
-		#self, model, x, a, prv_model, previous_x, y, loss, output, next_model, all_loss
 		# we do backpropagation
 		# starting from the output layer, going through chain rule 
 		# we have a = activation(z), where z = wx + b
@@ -44,9 +43,9 @@ class Model():
 		#loss_ = getattr(losses, loss)
 		dloss_ = getattr(losses, 'd'+loss)
 		d_act = getattr(activation, 'dReLu')
-		
+
 		if output:
-			dC_dW = np.dot(dloss_(a, y), previous_x.T)
+			dC_dW = np.dot(dloss_(a, y), previous_a.T)
 			dC_db = dloss_(a, y)
 			aux = dloss_(a, y)
 			#print('shapes output')
@@ -55,10 +54,10 @@ class Model():
 		else:
 			#print(f'delta h: updated_weight matrix{next_model[0].T.shape}\ndelta_values: {all_loss[2].shape}, deriv of Relu: {d_act(a).shape}\ndiference: {all_loss[2]}')
 			delta_h = np.dot(next_model[0].T,all_loss[2])*d_act(a)
-			dC_dW = np.dot(delta_h, previous_x.T)
+			dC_dW = np.dot(delta_h, previous_a.T)
 			dC_db = delta_h
 			#print('shapes hidden')
-			#print(delta_h.shape, dC_dW.shape, dC_db.shape)
+			#print(dC_dW.shape, dC_db.shape, delta_h.shape)
 
 			return [dC_dW, dC_db, delta_h]
 
@@ -95,7 +94,7 @@ class Model():
 						A.append(self.forward(model[j], A[-1]))
 
 					#print(f'{i} iteracao, camada {j} com {model[j][1].shape[0]} valores')
-				print('resultado do softmax:', A[-1])
+				#print('resultado do softmax:', A[-1])
 				#backward pass
 				#remember to shuffle the entire data
 				avg_loss = 0
@@ -104,7 +103,7 @@ class Model():
 					#loss
 					loss_ = getattr(losses, loss)
 					avg_loss += loss_(A[-1], y[k])
-					print('losss', avg_loss, A[-1])
+					#print('losss', avg_loss, A[-1])
 					
 					
 					for m in range(y.shape[1]):
@@ -112,7 +111,7 @@ class Model():
 							break
 					if (np.argmax(A[-1]) == m):
 						acc += 1
-						print('YAY')
+						#print('YAY')
 
 
 					all_loss = list()

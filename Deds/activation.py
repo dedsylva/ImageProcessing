@@ -2,13 +2,12 @@ import numpy as np
 
 def ReLu(x):
 	return np.maximum(0,x)
-	#return x if x > 0 else 0
 
 def dReLu(x):
 	data = np.copy(x)
 	for i in range(x.shape[0]):
 		for j in range(x.shape[1]):
-			if(x[i] > 0):
+			if(x[i][j] > 0):
 				data[i][j] = 1
 			else:
 				data[i][j] = 0
