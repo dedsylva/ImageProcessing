@@ -29,9 +29,8 @@ def Softmax(x):
 
 	return np.exp(x-max)/sum(np.exp(x-max))
 
-#res = np.exp(x)/(np.sum(np.exp(x)))
-#res = np.clip(res, -88.72, 88.72)
-#return res
+def dSoftmax(x):
+	return x*(1-x)
 
 def Tanh(x):
 	(np.exp(x) - np.exp(-x))/(np.exp(x) + np.exp(-x))
