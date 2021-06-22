@@ -20,14 +20,14 @@ def dSigmoid(x):
 	return sigmoid(x)*(1-sigmoid(x))
 
 def Softmax(x):
-	max = np.max(x)
+	max_ = np.max(x)
 
-	if max >= 100:
+	if max_ >= 100:
 		res = np.zeros((len(x),1))
 		res[np.argmax(x)] = 1
 		return res
 
-	return np.exp(x-max)/sum(np.exp(x-max))
+	return np.exp(x-max_)/sum(np.exp(x-max_))
 
 def dSoftmax(x):
 	return x*(1-x)

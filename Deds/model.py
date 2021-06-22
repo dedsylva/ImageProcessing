@@ -19,7 +19,6 @@ class Model():
 		W = model[0]
 		b = model[1]
 		actv = model[2]
-		print(W.shape, x.shape, b.shape)
 		act = getattr(activation, actv)
 		res = np.dot(W,x) + b
 		return [x, res, act(res)]
@@ -53,6 +52,8 @@ class Model():
 			#dc_db
 			dc_db_o = dc_da_o*da_dz_o
 
+			print('output')
+			print(dc_da_o, da_dz_o, dc_dw_o, dc_db_o)
 			return [dc_da_o, da_dz_o, dc_dw_o, dc_db_o]
 
 		else:
@@ -68,8 +69,19 @@ class Model():
 			#dc_db
 			dc_db = dc_da*da_dz
 
+			print('other layers')
+			print(dc_da, da_dz, dc_dw, dc_db)
 			return [dc_da, da_dz, dc_dw, dc_db]
 
+
+	def summary(self, model):
+		print(f'| Total Number of Layers: {len(model)} |')
+		for i in range(len(model)):
+			inputs = model[i][0].shape[1]
+			outputs = model[i][0].shape[0]
+
+			print('| layer {} with {} inputs and {} outputs neurons |'.format(i+1, 
+				inputs, outputs))
 
 	def Input(self, neurons, input_shape, activation):
 		#random weights and bias between -0.5 to 0.5
@@ -90,54 +102,57 @@ class Model():
 		return model
 
 	def Train(self, model, x, y, loss, opt, epochs, batch, lr=0.04):
+		l = []
+		ac = []
+		
+		self.summary(model)
 		#print('model summary')
 		for i in range(epochs):
-			loss_epoch = 0
-			acc_epoch = 0
-			for m in range(x.shape[0]): #training the forward on all data
+			avg_loss = 0
+			acc = 0
+			for k in np.arange(0, y.shape[0], batch): #updating only batch-size data
 				A = list()
 				
 				#forward pass
 				for j in range(len(model)):
 					if (j == 0):
-						A.append(self.forward(model[j], x[m]))
+						A.append(self.forward(model[j], x[k]))
 					else:
 						A.append(self.forward(model[j], A[-1][2]))
 
-					#print(f'{i} iteracao, camada {j} com {model[j][1].shape[0]} valores')
-				#print('activation shape', A[-1][2].shape)
 				#backward pass
-				#remember to shuffle the entire data
+				#loss
+				loss_ = getattr(losses, loss)
+				#print(f'predicted results: {A[-1][2]}')
+				#print(f'real results: {y[k]}')
+				avg_loss += loss_(A[-1][2], y[k])
+				
+				#m = np.argmax(y[k])
+				#if (np.argmax(A[-1][2]) == m):
+				#	acc += 1
+				#print(f'guess: {A[-1][2]}, true: {y[k]}, loss: {loss_(A[-1][2], y[k])}')
 
-				avg_loss = 0
-				for k in np.arange(0, y.shape[0], batch): #updating only batch-size data
-					acc = 0
-					#loss
-					loss_ = getattr(losses, loss)
-					avg_loss += loss_(A[-1][2], y[k])
+				if (A[-1][2][0] == y[k]):
+					acc += 1
+
+
+				all_loss = list()
+				for j in range(len(model)):
+					if j == 0:
+						all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, True, model[-j], [0,0,0]))
+					else:
+						all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, False, model[-j], all_loss[-1]))
 					
-					for m in range(y.shape[1]):
-						if y[k][m] == 1:
-							break
-					if (np.argmax(A[-1][2]) == m):
-						acc += 1
-						#print('YAY')
+				opt_ = getattr(optimizers, opt)
+				#print(f'updating weights: {all_loss[0][2]}')
+				#if len( np.argwhere(all_loss[2][2] > 10) != 0):
+				#	print('large numbers', np.argwhere(all_loss[2][2] > 10))
+				model = opt_(model, all_loss, lr)
+			acc /= len(np.arange(0, y.shape[0], batch))
+			avg_loss /= len(np.arange(0, y.shape[0], batch))
 
+			print(f'epoch: {i}, accuracy: {acc}, loss: {avg_loss}')
+			l.append(avg_loss)
+			ac.append(acc)
 
-					all_loss = list()
-					for j in range(len(model)-1):
-						if j == 0:
-							all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, True, model[-j], [0,0,0]))
-						else:
-							all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, False, model[-j], all_loss[-1]))
-						opt_ = getattr(optimizers, opt)
-						model[-1-j] = opt_(model[-1-j], all_loss[-1], lr)
-						#print(f'params: {all_loss[-1][2]}, {all_loss[-1][3]}')
-				acc /= len(np.arange(0, y.shape[0], batch))
-				avg_loss /= len(np.arange(0, y.shape[0], batch))
-				acc_epoch += acc
-				loss_epoch += avg_loss
-
-			print(f'epoch: {i}, accuracy: {acc_epoch/i}, loss: {loss_epoch/i}')
-
-		return 0,0
+		return [l, ac]

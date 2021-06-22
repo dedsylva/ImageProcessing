@@ -1,9 +1,9 @@
 import numpy as np
 
-def SGD(model, gradient, lr):
+def SGD(model, gradients, lr):
 	for i in range(len(model)):
-		model[0] -= lr*gradient[2] #updating weights
-		model[1] -= lr*gradient[3] #updating biases
+		model[i][0] -= lr*gradients[-1-i][2] #updating weights
+		model[i][1] -= lr*gradients[-1-i][3] #updating biases
 
 	return model
 
