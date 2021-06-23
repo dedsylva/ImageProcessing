@@ -23,6 +23,4 @@ model = NN.Output(5, 1, model, activation='Linear')
 
 #train the model
 loss, accuracy = NN.Train(model, X_train, Y_train, 
-	loss='MSE', opt='SGD', epochs=10, batch=8, categoric=False, lr=0.04)
-
-print(len(loss), len(accuracy), loss, accuracy)
+	loss='MSE', opt='SGD', epochs=10, batch=8, categoric=False, lr=0.0005)
