@@ -19,6 +19,13 @@ def Sigmoid(x):
 def dSigmoid(x):
 	return sigmoid(x)*(1-sigmoid(x))
 
+def Linear(x):
+	return x
+
+def dLinear(x):
+	x.fill(1)
+	return x
+
 def Softmax(x):
 	max_ = np.max(x)
 

@@ -7,14 +7,14 @@ Studying different Deep Learning approaches of Image Detection, from feature ext
 
 Some broad topics to cover:
 * Dense Neural Network from scratch
- * Bugs happening right now
+ * Bugs in loss
 
 * Easy
- * MNIST NN Example (Easy) -- OK
- * Fashion MNIST NN Example (Easy) -- OK
+ * MNIST NN Example (Easy) -- DONE
+ * Fashion MNIST NN Example (Easy) -- DONE
  * Cat's and Dogs Example (Easy)
 * Medium
- * Categorical Data - More and Harder classes (Medium)
+ * Categorical Data - More classes (Medium)
  * Specific Categorization (Medium)
   1. Types of leafs
   2. Types of dogs

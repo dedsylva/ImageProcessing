@@ -8,8 +8,8 @@ X_train, Y_train, X_test, Y_test = db.get_data()
 
 class TestMNIST(unittest.TestCase):
 	def test_dataset(self):
-		assert = X_train.shape == (60000, 28, 28)
-		assert = X_test.shape == (10000, 28, 28)
+		assert X_train.shape == (60000, 28, 28, 1)
+		assert Y_test.shape == (10000, 28, 28, 1)
 
 	def test_model(self):
 		NN = Model((28,28,1), 'adam', 'categorical_crossentropy', ['accuracy'])

@@ -51,9 +51,6 @@ class Model():
 
 			#dc_db
 			dc_db_o = dc_da_o*da_dz_o
-
-			print('output')
-			print(dc_da_o, da_dz_o, dc_dw_o, dc_db_o)
 			return [dc_da_o, da_dz_o, dc_dw_o, dc_db_o]
 
 		else:
@@ -68,9 +65,6 @@ class Model():
 
 			#dc_db
 			dc_db = dc_da*da_dz
-
-			print('other layers')
-			print(dc_da, da_dz, dc_dw, dc_db)
 			return [dc_da, da_dz, dc_dw, dc_db]
 
 
@@ -101,12 +95,13 @@ class Model():
 		model.append([weights, bias, activation])
 		return model
 
-	def Train(self, model, x, y, loss, opt, epochs, batch, lr=0.04):
+	def Train(self, model, x, y, loss, opt, epochs, batch, categoric, lr=0.04):
 		l = []
 		ac = []
 		
+		#print summary
 		self.summary(model)
-		#print('model summary')
+
 		for i in range(epochs):
 			avg_loss = 0
 			acc = 0
@@ -123,17 +118,16 @@ class Model():
 				#backward pass
 				#loss
 				loss_ = getattr(losses, loss)
-				#print(f'predicted results: {A[-1][2]}')
-				#print(f'real results: {y[k]}')
 				avg_loss += loss_(A[-1][2], y[k])
 				
-				#m = np.argmax(y[k])
-				#if (np.argmax(A[-1][2]) == m):
-				#	acc += 1
-				#print(f'guess: {A[-1][2]}, true: {y[k]}, loss: {loss_(A[-1][2], y[k])}')
+				if categoric:
+					m = np.argmax(y[k])
+					if (np.argmax(A[-1][2]) == m):
+						acc += 1
 
-				if (A[-1][2][0] == y[k]):
-					acc += 1
+				else:
+					if (int(A[-1][2][0]) == int(y[k])):
+						acc += 1
 
 
 				all_loss = list()
@@ -144,9 +138,6 @@ class Model():
 						all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, False, model[-j], all_loss[-1]))
 					
 				opt_ = getattr(optimizers, opt)
-				#print(f'updating weights: {all_loss[0][2]}')
-				#if len( np.argwhere(all_loss[2][2] > 10) != 0):
-				#	print('large numbers', np.argwhere(all_loss[2][2] > 10))
 				model = opt_(model, all_loss, lr)
 			acc /= len(np.arange(0, y.shape[0], batch))
 			avg_loss /= len(np.arange(0, y.shape[0], batch))
