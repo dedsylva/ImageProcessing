@@ -3,8 +3,6 @@
 ## Objective
 Studying different Deep Learning approaches of Image Detection, from feature extraction to inference.
 
-<br>
-
 Some broad topics to cover:
 * Dense Neural Network from scratch
  * Bugs in loss
