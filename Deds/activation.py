@@ -28,12 +28,6 @@ def dLinear(x):
 
 def Softmax(x):
 	max_ = np.max(x)
-
-	if max_ >= 100:
-		res = np.zeros((len(x),1))
-		res[np.argmax(x)] = 1
-		return res
-
 	return np.exp(x-max_)/sum(np.exp(x-max_))
 
 def dSoftmax(x):

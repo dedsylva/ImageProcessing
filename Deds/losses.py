@@ -1,7 +1,7 @@
 import numpy as np
 
 def MSE(x, y):
-	return np.mean((x-y)**2)
+	return (x-y)**2
 
 def dMSE(x,y):
 	return 2*(x-y)

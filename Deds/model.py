@@ -17,10 +17,10 @@ class Model():
 		# z[i] = W[i-1]x + b[i-1]
 		# a[i] = f(z[i]) -- f is the activation funciton
 		W = model[0]
-		b = model[1]
+		#b = model[1]
 		actv = model[2]
 		act = getattr(activation, actv)
-		res = np.dot(W,x) + b
+		res = np.dot(W,x) #+ b
 		return [x, res, act(res)]
 
 
@@ -45,13 +45,14 @@ class Model():
 			all_loss = list()
 			#dc_dw
 			dc_da_o = d_loss_(a, y)
-			da_dz_o = d_act_(z)
+			da_dz_o = d_act_(a)
 			dz_dw_o = a_t0.T #previous activation
 			dc_dw_o = np.dot(dc_da_o*da_dz_o, dz_dw_o)
 
 			#dc_db
-			dc_db_o = dc_da_o*da_dz_o
-			return [dc_da_o, da_dz_o, dc_dw_o, dc_db_o]
+			#dc_db_o = dc_da_o*da_dz_o
+			#return [dc_da_o, da_dz_o, dc_dw_o, dc_db_o]
+			return [dc_da_o, da_dz_o, dc_dw_o]
 
 		else:
 			#dc_dw
@@ -59,23 +60,24 @@ class Model():
 			da_t1_dz_t1 = all_loss[1]
 			dz_t1_da = W_t1
 			dc_da = np.dot((dc_da_t1*da_t1_dz_t1).T, dz_t1_da).T
-			da_dz = d_act_(z)
+			da_dz = d_act_(a)
 			dz_dw = a_t0.T
 			dc_dw = np.dot(dc_da*da_dz, dz_dw)
 
 			#dc_db
-			dc_db = dc_da*da_dz
-			return [dc_da, da_dz, dc_dw, dc_db]
+			#dc_db = dc_da*da_dz
+			#return [dc_da, da_dz, dc_dw, dc_db]
+			return [dc_da, da_dz, dc_dw]
 
 
 	def summary(self, model):
-		print(f'| Total Number of Layers: {len(model)} |')
+		#print(f'| Total Number of Layers: {len(model)} |')
 		for i in range(len(model)):
 			inputs = model[i][0].shape[1]
 			outputs = model[i][0].shape[0]
 
-			print('| layer {} with {} inputs and {} outputs neurons |'.format(i+1, 
-				inputs, outputs))
+			#print('| layer {} with {} inputs and {} outputs neurons |'.format(i+1, 
+		#		inputs, outputs))
 
 	def Input(self, neurons, input_shape, activation):
 		#random weights and bias between -0.5 to 0.5
@@ -118,11 +120,10 @@ class Model():
 				#backward pass
 				#loss
 				loss_ = getattr(losses, loss)
-				avg_loss += loss_(A[-1][2], y[k])
+				avg_loss += (loss_(A[-1][2], y[k])).mean(axis=1)
 				
 				if categoric:
-					m = np.argmax(y[k])
-					if (np.argmax(A[-1][2]) == m):
+					if (np.argmax(A[-1][2]) == np.argmax(y[k])):
 						acc += 1
 
 				else:
@@ -142,8 +143,27 @@ class Model():
 			acc /= len(np.arange(0, y.shape[0], batch))
 			avg_loss /= len(np.arange(0, y.shape[0], batch))
 
-			print(f'epoch: {i}, accuracy: {acc}, loss: {avg_loss}')
+			print(f'epoch: {i}, accuracy: {acc}')
+			#print(f'epoch: {i}, accuracy: {acc}, loss: {avg_loss}')
 			l.append(avg_loss)
 			ac.append(acc)
 
-		return [l, ac]
+		return model, l, ac
+
+	def Evaluate(self, model, x, y, categoric):
+		results = list()
+		precision = 0
+		for k in range(len(x)):
+			for j in range(len(model)):
+				if (j == 0):
+					results.append(self.forward(model[j], x[k]))
+				else:
+					results.append(self.forward(model[j], results[-1][2]))
+
+			if categoric:
+				if (np.argmax(results[-1][2]) == np.argmax(y[k])):
+					precision += 1
+
+
+		print(f'##### Network got {precision/len(y)} right')
+		return precision
