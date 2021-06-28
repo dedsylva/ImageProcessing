@@ -15,23 +15,20 @@ class TestMNIST(unittest.TestCase):
 		X_train, X_test, Y_train, Y_test = db.get_data()
 
 		NN = Model()
-
+		epochs = 10
+		BS = 64
 		model = NN.Input(128, input_shape=X_train.shape[1], activation='ReLu')		
 		model = NN.Dense(128, 100, model, activation='ReLu')
-		model = NN.Dense(100, 50, model, activation='ReLu')
-		model = NN.Dense(50, 30, model, activation='ReLu')
-		model = NN.Output(30, 10, model, activation='Softmax')
-		print('hey', model[0][0].shape, model[1][0].shape, model[2][0].shape
-			, model[2][0].shape, model[3][0].shape, model[4][0].shape)
+		model = NN.Output(100, 10, model, activation='Softmax')
 
 		#train the model
-		loss, accuracy = NN.Train(model, X_train, Y_train, 
-			loss='MSE', opt='SGD', epochs=20, batch=256, categoric=True)
+		model, loss, accuracy = NN.Train(model, X_train, Y_train, 
+				loss='MSE', opt='SGD', epochs=epochs, batch=BS, categoric=True, lr=0.001)
 
-		self.assertEqual(len(loss), 20)
-		self.assertEqual(len(accuracy), 20)
+		self.assertEqual(len(loss), epochs)
+		self.assertEqual(len(accuracy), epochs)
 		self.assertFalse(np.any(np.array(accuracy) > 1))
-		self.assertEqual(len(model), 5)
+		self.assertEqual(len(model), 3)
 		self.assertEqual(model[0][2], 'ReLu')
 		self.assertEqual(model[-1][2], 'Softmax')
 		self.assertEqual(model[1][0].shape, (100, 128)) #weights of 1st hidden layer
@@ -57,8 +54,9 @@ class TestWheat(unittest.TestCase):
 		model = NN.Dense(7, 5, model, activation='ReLu')
 		model = NN.Output(5, 1, model, activation='Linear')
 
+
 		#train the model
-		loss, accuracy = NN.Train(model, X_train, Y_train, 
+		model, loss, accuracy = NN.Train(model, X_train, Y_train, 
 			loss='MSE', opt='SGD', epochs=10, batch=1, categoric=False)	
 
 
