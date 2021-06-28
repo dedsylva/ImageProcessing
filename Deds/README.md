@@ -55,3 +55,10 @@ history = model.fit(
 ```python
 python -m unittest tests/tests_deds.py
 ```
+
+### Todo
+* Implement Dense -- done
+* Implement gradcheck (numeric)
+* Implement convolutions
+* Implement LSTM
+* Implement Adam optimizer
