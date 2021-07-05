@@ -17,10 +17,10 @@ class Model():
 		# z[i] = W[i-1]x + b[i-1]
 		# a[i] = f(z[i]) -- f is the activation funciton
 		W = model[0]
-		#b = model[1]
+		b = model[1]
 		actv = model[2]
 		act = getattr(activation, actv)
-		res = np.dot(W,x) #+ b
+		res = np.dot(W,x) + b
 		return [x, res, act(res)]
 
 
@@ -42,62 +42,71 @@ class Model():
 		d_act_ = getattr(activation, 'd'+actv)
 
 		if output:
-			all_loss = list()
+			all_lost = list()
 			#dc_dw
-			dc_da_o = d_loss_(a, y)
-			da_dz_o = d_act_(a)
+			dc_dz_o = (a - y)
 			dz_dw_o = a_t0.T #previous activation
-			dc_dw_o = np.dot(dc_da_o*da_dz_o, dz_dw_o)
+			dc_dw_o = np.dot(dc_dz_o, dz_dw_o)/y.shape[0]
 
 			#dc_db
-			#dc_db_o = dc_da_o*da_dz_o
-			#return [dc_da_o, da_dz_o, dc_dw_o, dc_db_o]
-			return [dc_da_o, da_dz_o, dc_dw_o]
+			dc_db_o = dc_dz_o/y.shape[0]
+			return [dc_dz_o, dc_dw_o, dc_db_o]
 
 		else:
 			#dc_dw
-			dc_da_t1 = all_loss[0]
-			da_t1_dz_t1 = all_loss[1]
+			dc_dz_t1 = all_loss[0]
 			dz_t1_da = W_t1
-			dc_da = np.dot((dc_da_t1*da_t1_dz_t1).T, dz_t1_da).T
-			da_dz = d_act_(a)
+			da_dz = d_act_(z)
+			dc_dz = np.dot((dc_dz_t1).T, dz_t1_da).T *da_dz
 			dz_dw = a_t0.T
-			dc_dw = np.dot(dc_da*da_dz, dz_dw)
+			dc_dw = np.dot(dc_dz, dz_dw)/y.shape[0]
 
 			#dc_db
-			#dc_db = dc_da*da_dz
-			#return [dc_da, da_dz, dc_dw, dc_db]
-			return [dc_da, da_dz, dc_dw]
+			dc_db = dc_dz/y.shape[0]
+			return [dc_dz, dc_dw,dc_db]
 
 
 	def summary(self, model):
-		#print(f'| Total Number of Layers: {len(model)} |')
+		print(f'| Total Number of Layers: {len(model)} |')
 		for i in range(len(model)):
 			inputs = model[i][0].shape[1]
 			outputs = model[i][0].shape[0]
 
-			#print('| layer {} with {} inputs and {} outputs neurons |'.format(i+1, 
-		#		inputs, outputs))
+			print('| layer {} with {} inputs and {} outputs neurons |'.format(i+1, 
+				inputs, outputs))
 
 	def Input(self, neurons, input_shape, activation):
 		#random weights and bias between -0.5 to 0.5
+		np.random.seed(23)
 		weights = np.random.rand(neurons, input_shape) - 0.5
 		bias = np.random.rand(neurons, 1) - 0.5
 		return [[weights, bias, activation]]
 
 	def Dense(self, pr_neurons, next_neurons, model, activation):
+		np.random.seed(23)
 		weights = np.random.rand(next_neurons, pr_neurons) - 0.5
 		bias = np.random.rand(next_neurons, 1) - 0.5
 		model.append([weights, bias, activation])
 		return model
 
 	def Output(self, pr_neurons, next_neurons, model, activation):
+		np.random.seed(23)
 		weights = np.random.rand(next_neurons, pr_neurons) - 0.5
 		bias = np.random.rand(next_neurons, 1) - 0.5
 		model.append([weights, bias, activation])
 		return model
 
-	def Train(self, model, x, y, loss, opt, epochs, batch, categoric, lr=0.04):
+	def Train(self, model, x, y, loss, opt, epochs, batch, categoric, lr=0.04,
+			  momentum=True, gamma=0.95):
+		
+		#optimizer with momentum
+		if not momentum:
+			m = False
+			gamma = 0
+		else:
+			m = True
+			g=0.95
+
 		l = []
 		ac = []
 		
@@ -107,9 +116,14 @@ class Model():
 		for i in range(epochs):
 			avg_loss = 0
 			acc = 0
-			for k in np.arange(0, y.shape[0], batch): #updating only batch-size data
+			count = 0
+			samp = np.random.randint(0, y.shape[0], size=y.shape[0]//batch)
+			#samp = np.arange(0, y.shape[0], batch) #batch sample size
+			for k in samp:
 				A = list()
 				
+				count += 1
+
 				#forward pass
 				for j in range(len(model)):
 					if (j == 0):
@@ -120,7 +134,7 @@ class Model():
 				#backward pass
 				#loss
 				loss_ = getattr(losses, loss)
-				avg_loss += (loss_(A[-1][2], y[k])).mean(axis=1)
+				avg_loss += (loss_(A[-1][2], y[k])).mean()
 				
 				if categoric:
 					if (np.argmax(A[-1][2]) == np.argmax(y[k])):
@@ -137,14 +151,21 @@ class Model():
 						all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, True, model[-j], [0,0,0]))
 					else:
 						all_loss.append(self.backward(A[-1-j], model[-1-j][2], y[k], loss, False, model[-j], all_loss[-1]))
-					
-				opt_ = getattr(optimizers, opt)
-				model = opt_(model, all_loss, lr)
-			acc /= len(np.arange(0, y.shape[0], batch))
-			avg_loss /= len(np.arange(0, y.shape[0], batch))
 
-			print(f'epoch: {i}, accuracy: {acc}')
-			#print(f'epoch: {i}, accuracy: {acc}, loss: {avg_loss}')
+				if momentum:
+					if count == 1:
+						momentum_ = [[lr*all_loss[j][1], lr*all_loss[j][2]] for j in range(len(model))]
+					else:
+						momentum_ = [[gamma*momentum_[j][0] + lr*all_loss[j][1],
+								    	gamma*momentum_[j][1] + lr*all_loss[j][2]] for j in range(len(model))]
+
+				#update params
+				opt_ = getattr(optimizers, opt)
+				model = opt_(model, momentum_) 
+			acc /= count
+			avg_loss /= count
+
+			print(f'epoch: {i+1}, accuracy: {acc}, loss: {avg_loss}')
 			l.append(avg_loss)
 			ac.append(acc)
 
@@ -164,6 +185,10 @@ class Model():
 				if (np.argmax(results[-1][2]) == np.argmax(y[k])):
 					precision += 1
 
+			else:
+				if (int(results[-1][2][0]) == int(y[k])):
+					precision += 1
 
-		print(f'##### Network got {precision/len(y)} right')
+
+		print(f'Network got {precision/len(y)} right')
 		return precision

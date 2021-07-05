@@ -4,13 +4,8 @@ def ReLu(x):
 	return np.maximum(0,x)
 
 def dReLu(x):
-	data = np.copy(x)
-	for i in range(x.shape[0]):
-		for j in range(x.shape[1]):
-			if(x[i][j] > 0):
-				data[i][j] = 1
-			else:
-				data[i][j] = 0
+	data = np.array(x, copy=True)
+	data[x<= 0] = 0
 	return data
 
 def Sigmoid(x):

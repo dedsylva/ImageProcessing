@@ -15,8 +15,8 @@ class TestMNIST(unittest.TestCase):
 		X_train, X_test, Y_train, Y_test = db.get_data()
 
 		NN = Model()
-		epochs = 10
-		BS = 64
+		epochs = 20
+		BS = 128
 		model = NN.Input(128, input_shape=X_train.shape[1], activation='ReLu')		
 		model = NN.Dense(128, 100, model, activation='ReLu')
 		model = NN.Output(100, 10, model, activation='Softmax')
@@ -48,22 +48,23 @@ class TestWheat(unittest.TestCase):
 		X_train, X_test, Y_train, Y_test = db.get_data(train=0.9)
 
 		NN = Model()
+		epochs = 20
+		BS = 8
 
 		model = NN.Input(10, input_shape=X_train.shape[1], activation='ReLu')
-		model = NN.Dense(10, 7, model, activation='ReLu')
-		model = NN.Dense(7, 5, model, activation='ReLu')
+		model = NN.Dense(10, 5, model, activation='ReLu')
 		model = NN.Output(5, 1, model, activation='Linear')
 
 
 		#train the model
 		model, loss, accuracy = NN.Train(model, X_train, Y_train, 
-			loss='MSE', opt='SGD', epochs=10, batch=1, categoric=False)	
+			loss='MSE', opt='SGD', epochs=epochs, batch=BS, categoric=False)	
 
 
-		self.assertEqual(len(loss), 10)
-		self.assertEqual(len(accuracy), 10)
+		self.assertEqual(len(loss), epochs)
+		self.assertEqual(len(accuracy), epochs)
 		self.assertFalse(np.any(np.array(accuracy) > 1))
-		self.assertEqual(len(model), 4)
+		self.assertEqual(len(model), 3)
 		self.assertEqual(model[0][2], 'ReLu')
 		self.assertEqual(model[0][0].shape, (10, 7)) #weights shape of input
 		self.assertEqual(model[0][1].shape, (10, 1)) #bias shape of input

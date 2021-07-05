@@ -31,73 +31,98 @@ x = X_train
 y = Y_train
 
 # layer 1
-weights_1 = np.zeros((128, 28*28), dtype='float32')
-b_1 = np.zeros((128, 1), dtype='float32')
+np.random.seed(23)
 weights_1 = np.random.rand(128, 28*28) - 0.5
 b_1 = np.random.rand(128, 1) - 0.5
 		
-weights_2 = np.zeros((10, 128), dtype='float32')
-b_2 = np.zeros((10, 1), dtype='float32')
+# layer 2
+weights_2 = np.random.rand(70, 128) - 0.5
+b_2 = np.random.rand(70, 1) - 0.5
 
-weights_2 = np.random.rand(10, 128) - 0.5
-b_2 = np.random.rand(10, 1) - 0.5
+# output layer
+weights_3 = np.random.rand(10, 70) - 0.5
+b_3 = np.random.rand(10, 1) - 0.5
 
-epochs = 200 
-BS = 32
+
+epochs = 40
+BS = 128
 lr = 0.0001
+gamma = 0.95
 
 losses = []
 accuracy =[]
 for i in range(epochs):
-
+	if i >= 20:
+		BS = 32
+		gamma = 0.99
 	acc = 0
 	loss = 0
-	for k in np.arange(0, y.shape[0], BS):
+	count = 0
+	np.random.seed(23)
+	samp = np.random.randint(0, y.shape[0], size=y.shape[0]//BS)
+	#samp = np.arange(0, y.shape[0], BS) #batch sample size
+	for k in samp:
 		#forward
 		z_1 = np.dot(weights_1, x[k])+ b_1
 		a_1 = relu(z_1) 
 		z_2 = np.dot(weights_2, a_1) + b_2
-		a_2 = softmax(z_2)
+		a_2 = relu(z_2)
+		z_3 = np.dot(weights_3, a_2) + b_3
+		a_3 = softmax(z_3)
 
-		loss += (a_2 - y[k]).mean(axis=1)
-		if (np.argmax(a_2) == np.argmax(y[k])):
+		count += 1
+
+		loss += ((a_3 - y[k])**2).mean()
+		if (np.argmax(a_3) == np.argmax(y[k])):
 			acc += 1
-
 		#backward
 		#output layer
-		dc_da_o = 2*(a_2 - y[k])
-		da_dz_o = a_2*(1-a_2)
-		dz_dw_o = a_1.T
-		dw2 = np.dot(dc_da_o*da_dz_o,dz_dw_o)
-		db2 = dc_da_o*da_dz_o
+		dc_dz_o = (a_3 - y[k])
+		dz_dw_o = a_2.T
+		dw3 = np.dot(dc_dz_o,dz_dw_o)/y[k].shape[0]
+		db3 = dc_dz_o/y[k].shape[0]
 
-		#other layers
-		dc_da_t1 = dc_da_o
-		da_t1_dz_t1 = da_dz_o
-		dz_t1_da = weights_2
-		dc_da = np.dot((dc_da_t1*da_t1_dz_t1).T, dz_t1_da).T
-		da_dz = dReLu(a_1)
-		dz_dw = x[k].T
-		dw1 = np.dot(dc_da*da_dz, dz_dw)
-		db1 = dc_da*da_dz
+		#layer 2
+		dc_dz_t1 = dc_dz_o
+		dz_t1_da = weights_3.T
+		da_dz_2 = dReLu(z_2) 
+		dc_dz_2 = np.dot(dz_t1_da, dc_dz_t1)* da_dz_2
+		dz_dw_2 = a_1.T
+		dw2 = np.dot(dc_dz_2, dz_dw_2)/y[k].shape[0]
+		db2 = dc_dz_2/y[k].shape[0]
+
+		#layer 1
+		dc_dz_t1 = dc_dz_2
+		dz_t1_da = weights_2.T
+		da_dz_1 = dReLu(z_1) 
+		dc_dz_1 = np.dot(dz_t1_da, dc_dz_t1)* da_dz_1
+		dz_dw_1 = x[k].T
+		dw1 = np.dot(dc_dz_1, dz_dw_1)/y[k].shape[0]
+		db1 = dc_dz_1/y[k].shape[0]
+
+
+		if count == 1:
+			momentum = [lr*dw1, lr*db1, lr*dw2, lr*db2, lr*dw3, lr*db3]
+		else:
+			momentum = [gamma*momentum[0] + lr*dw1, gamma*momentum[1] + lr*db1, gamma*momentum[2] + lr*dw2,
+						gamma*momentum[3] + lr*db2, gamma*momentum[4] + lr*dw3, gamma*momentum[5] + lr*db3]
 
 		#sgd
-		weights_1 -= lr*dw1
-		b_1 -= lr*db1
+		weights_1 -= momentum[0]
+		b_1 -= momentum[1]
 				
-		weights_2 -= lr*dw2
-		b_2 -= lr*db2
+		weights_2 -= momentum[2]
+		b_2 -= momentum[3]
 
-		#print(f'difference on weight: {dw2}\nmax number: {np.max(dw2, axis=1)}')
-		#print(f'difference on weight: {dw2}\ndifference on bias: {db2}')
-		#print(f'predic: {a_2}')
+		weights_3 -= momentum[4]
+		b_3 -= momentum[5]
 
-	acc /= len(np.arange(0, y.shape[0], BS))
-	loss /= len(np.arange(0, y.shape[0], BS))
+	acc /= count
+	loss /= count
 	accuracy.append(acc)
 	losses.append(loss)
-	print(f'epoch: {i}, accuracy: {acc}')
-	#print(f'epoch: {i}, accuracy: {acc}, loss: {loss}')
+	#print(f'epoch: {i}, accuracy: {acc}')
+	print(f'epoch: {i+1}, accuracy: {acc}, loss: {loss}')
 
 
 print('Evaluating')
@@ -106,15 +131,19 @@ for k in range(len(Y_test)):
 	z_1 = np.dot(weights_1, X_test[k])+ b_1
 	a_1 = relu(z_1) 
 	z_2 = np.dot(weights_2, a_1) + b_2
-	a_2 = softmax(z_2)
+	a_2 = relu(z_2)
+	z_3 = np.dot(weights_3, a_2) + b_3
+	a_3 = softmax(z_3)
 
-	if (np.argmax(a_2) == np.argmax(Y_test[k])):
+	if (np.argmax(a_3) == np.argmax(Y_test[k])):
 		precision += 1
 
-print(f'##### Network got {precision/len(Y_test)} right')
+print(f'Network got {precision/len(Y_test)} right')
 
 
 import matplotlib.pyplot as plt
-plt.plot(range(epochs), accuracy)
-plt.title('accuracy during training')
+plt.plot(range(epochs), accuracy, label='accuracy')
+plt.plot(range(epochs), losses, label='loss')
+plt.title('Trainning results')
+plt.legend()
 plt.show()
